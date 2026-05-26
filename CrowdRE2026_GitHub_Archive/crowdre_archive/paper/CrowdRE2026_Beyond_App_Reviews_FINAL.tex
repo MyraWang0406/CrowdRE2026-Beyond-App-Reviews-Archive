@@ -1,0 +1,419 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{tabularx}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue,
+}
+
+\begin{document}
+
+\title{Beyond App Reviews: Mining Crowd Feedback for Smart Connected Product Requirements\\
+{\large A Platform-Aware Experience Report Toward CrowdRE 2030}}
+
+\author{\IEEEauthorblockN{Zhimin Wang}
+\IEEEauthorblockA{Shanghai Jiao Tong University\\
+Shanghai, China\\
+Email: myra0406@sjtu.edu.cn}
+}
+
+\maketitle
+
+\begin{abstract}
+Crowd-Based Requirements Engineering (CrowdRE) has spent its first decade primarily mining app store reviews. Smart connected products---smartphones and new-energy vehicles---generate crowd feedback distributed across structurally different platforms that interweave hardware experience, software quality, AI services, and lifecycle concerns inaccessible through app-store channels. This experience report describes a platform-aware CrowdRE pipeline applied to two domains: a smartphone corpus (4,984 items from Reddit, Bilibili, GSMArena, and SMZDM) and a smart vehicle corpus (1,185 posts and 18,049 comments from Bilibili and Reddit, spanning 9 brands and 34 models). Three contributions emerge: (C1) we characterize smart connected products as a distinct CrowdRE context where hardware lifecycle, software quality, service trust, and transaction integrity co-exist; (C2) we propose an evidence-to-requirement-signal workflow that links each requirement candidate to its source platform, topic cluster, and inspectable evidence; and (C3) we show empirically that platform identity substantially shifts the observed requirement vocabulary, making unstratified corpus merging a structural risk. Reflecting on a decade of CrowdRE, we identify platform stratification, platform-specific noise filtering, and lifecycle-aware requirement vocabularies as open challenges for the field toward 2030.
+\end{abstract}
+
+\begin{IEEEkeywords}
+CrowdRE, smart connected products, platform-aware analysis, requirement signals, experience report, cross-platform feedback mining, LLM-assisted elicitation
+\end{IEEEkeywords}
+
+\section{Introduction: The Gap Left by the App-Review Decade}
+
+CrowdRE has matured significantly since its introduction in 2015~\cite{Groen2017}. The paradigm established that large-scale, publicly available user feedback is a viable and valuable input to requirements engineering. Foundational work by Pagano and Maalej~\cite{Pagano2013}, Maalej and Nabil~\cite{Maalej2015}, and Guzman and Maalej~\cite{Guzman2014} established the app store review as the canonical crowd feedback artifact, introducing taxonomies---bug, feature request, and praise---that have shaped the field for ten years.
+
+As CrowdRE'26 invites reflection on that decade and a roadmap toward 2030, a structural gap deserves naming: the crowd for smart connected products does not live in app stores. A consumer reporting a smartphone AI processing complaint, discussing new-energy vehicle OTA update failures, or debating second-hand EV battery degradation on Reddit is not writing an app review. This crowd is distributed across video-comment platforms (Bilibili), English discussion forums (Reddit), and specification-driven review sites (GSMArena)---each with different communication norms, user intent, content density, and noise profiles.
+
+This creates three problems the first decade of CrowdRE was not designed to solve:
+\begin{itemize}
+\item \textbf{Scope mismatch.} The bug/feature/praise taxonomy from app reviews does not accommodate hardware lifecycle concerns such as battery degradation, dealer trust, or resale value.
+\item \textbf{Platform heterogeneity as a structural variable.} Merging Bilibili and Reddit into a single corpus produces a representation of no real user community. Platform identity changes which topics appear, how sentiments are expressed, and what proportion of the corpus constitutes actionable signal rather than noise.
+\item \textbf{The signal-to-requirement gap.} Mining tends to stop at sentiment labels or topic counts, rather than producing traceable, actionable requirement candidates~\cite{Dalpiaz2021}. Requirements engineering needs more than a sentiment dashboard.
+\end{itemize}
+
+This paper reports our experience designing and applying a pipeline to address these problems, and reflects on what this implies for CrowdRE toward 2030.
+
+\section{Background and Related Work}
+
+\subsection{CrowdRE: The First Decade}
+
+From 2015 to 2025, CrowdRE research established how to collect, classify, and prioritize user feedback at scale~\cite{Groen2017,Groen2015,Wouters2022}. App stores became the primary data source, enabling reproducible benchmarks and fine-grained analysis of user needs~\cite{Maalej2015,Guzman2014,Iacob2013}. These contributions are real and lasting, but share one implicit constraint: the crowd is assumed to provide feedback through structured, single-product channels. Smart connected products break this assumption.
+
+\subsection{Extending CrowdRE's Domain Scope}
+
+Recent work has begun to broaden CrowdRE's reach. Groen et al.~\cite{Groen2024} applied CrowdRE to digital farming. Karras et al.~\cite{Karras2021} showed that YouTube video comments introduce a safety category absent from app-store analyses. Pilone et al.~\cite{Pilone2024} addressed multilingual CrowdRE using LLMs. Our work extends this trajectory to smart connected products spanning smartphones, new-energy vehicles, and the post-purchase used-vehicle market, while adding platform content quality and stratification as methodological first-class concerns.
+
+\subsection{CrowdRE, Crowdsourcing, and Market Research}
+
+The boundary between CrowdRE, crowdsourcing for RE~\cite{Hosseini2014}, and commercial market research is a recurring community discussion~\cite{Groen2017}. CrowdRE's distinguishing commitment is that crowd feedback feeds back into requirements artifacts, not merely dashboards or reports. Our pipeline is designed to preserve this distinction: every insight terminates in a traceable requirement candidate, not a statistic.
+
+\subsection{LLM-Assisted CrowdRE}
+
+Recent RE work has foregrounded LLMs as emerging tools~\cite{Arora2023}. Our experience positions LLMs as analyst augmentation interfaces, not autonomous requirement generators. Every LLM-produced insight traces back to source platform, topic cluster, evidence count, and inspectable sample text---a design that responds directly to the reliability and bias concerns that CrowdRE Ten raises~\cite{Groen2017}.
+
+\section{Approach: A Platform-Aware Evidence-to-Requirement Pipeline}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\columnwidth]{CrowdRE2026_pipeline_figure}
+\caption{Platform-aware evidence-to-requirement pipeline. Platform provenance is preserved across collection, filtering, requirement-signal mapping, and the traceable analyst interface.}
+\label{fig:pipeline}
+\end{figure}
+
+Figure~\ref{fig:pipeline} summarizes the pipeline. The foundational design choice is that platform provenance is preserved throughout the analysis rather than discarded as a source label.
+
+\subsection{Stage 1 -- Platform-Aware Data Collection}
+
+Table~\ref{tab:collection} summarizes the data collection protocol. Crawler scripts are published at \url{https://github.com/MyraWang0406/Auto-sentiment-copilot-V1}.
+
+Smartphone data were collected using brand and model keywords across six brands (vivo, Samsung, Xiaomi, Apple, OPPO, Huawei). Vehicle data used brand-model search terms with \textit{used} qualifiers on Reddit (e.g., ``BYD Seal used''), covering 9 brands and 34 models. Bilibili vehicle content covered the same brands without the used-car filter. SMZDM ($N{=}14$) is treated as exploratory only and excluded from formal comparisons.
+
+\begin{table}[htb]
+\caption{Data Collection Protocol}
+\label{tab:collection}
+\centering\small
+\begin{tabular}{lllrl}
+\toprule
+Platform & Domain & Lang & N & Role \\
+\midrule
+Reddit       & Smartphone    & EN & 3,569  & Formal \\
+Bilibili     & Smartphone    & CN & 941    & Formal \\
+GSMArena/NC  & Smartphone    & EN & 460    & Formal \\
+SMZDM        & Smartphone    & CN & 14     & Exploratory \\
+Bilibili     & Smart vehicle & CN & 16,334$^\dagger$ & Formal \\
+Reddit       & Smart vehicle & EN & 1,715$^\dagger$  & Formal \\
+\bottomrule
+\end{tabular}
+\par\smallskip\footnotesize
+$^\dagger$Comment counts; posts: 951 Bilibili, 234 Reddit.
+\end{table}
+
+\subsection{Stage 2 -- Normalization, Filtering, and Labeling}
+
+Each item is normalized to: \texttt{\{platform, brand, model, text, sentiment, topic, is\_complaint\}}. Sentiment is classified using language-appropriate methods: VADER~\cite{Hutto2014} for English (Reddit, GSMArena) and a domain-informed lexicon for Chinese (Bilibili). The Chinese lexicon is a lightweight heuristic rather than a formally evaluated classifier; this limitation is addressed in Section~\ref{sec:limits}.
+
+A critical observation from pipeline deployment is that Bilibili comments exhibit measurable noise. Using a conservative filter (comments under five characters, or emoji-only reactions), we estimate approximately 12.7\% of Bilibili vehicle comments are off-topic or non-actionable. We flag such items at ingestion and exclude them from topic and requirement-signal analysis.
+
+Complaint items are flagged when negative sentiment co-occurs with an actionable pattern (failure description, unmet expectation, or explicit request). As a lightweight plausibility check, we manually inspected 35 vehicle comments (20 Bilibili, 15 Reddit), checking whether noise flags, sentiment labels, and complaint flags were broadly consistent with content. This check was not a formal classifier evaluation and does not support accuracy claims.
+
+\subsection{Stage 3 -- Requirement Signal Identification}
+
+A \textit{requirement signal candidate} is a feedback cluster sharing a topic label and complaint pattern with sufficient evidence volume (${\geq}5$ distinct items per topic-platform cell), analyst-coded to imply at least one actionable requirement. One complaint may map to multiple candidates: a single comment about EV charging failure implies requirements for charger reliability, service response SLA, remote diagnostics, and owner notification. This amplification reflects the compressed encoding of latent requirements in informal crowd text, not inflation.
+
+Complaint and topic category counts in Section~\ref{sec:findings} are derived from an automated NLP analysis artifact. These counts were not manually validated at scale and should be interpreted as exploratory evidence for vocabulary construction.
+
+\subsection{Stage 4 -- LLM-Assisted Analyst Interface}
+
+A natural-language query interface over the aggregated evidence supports product analysts. Every response exposes its supporting platform, topic cluster, evidence count, and sample comment, making the LLM a traceable interface rather than an opaque summarizer.
+
+\section{Findings}
+\label{sec:findings}
+
+\subsection{F1: Platform Identity Shapes the Observed Requirement Vocabulary}
+
+Table~\ref{tab:sentiment} reports sentiment distributions using VADER (Reddit) and the Chinese lexicon (Bilibili). Reddit comments are substantially more emotionally polarized (20.8\% negative vs.\ 5.7\% on Bilibili). This finding requires careful interpretation: Bilibili's 70.9\% neutral proportion does not reflect product satisfaction; it partly reflects the noise and off-topic content identified in Stage 2. Reddit's negative polarity reflects the forum's design---users actively seek advice when experiencing problems.
+
+Topic distributions confirm platform-specificity beyond sentiment. Reddit surfaces explicit decision rationales and failure accounts. Bilibili surfaces brand reputation signals, price-sensitivity indicators, and comparative purchase intentions.
+
+\textbf{Key finding:} Platform identity is a major structural determinant of which requirement signals are observable in a corpus. Unstratified merging produces a synthetic crowd representing no real user group.
+
+\begin{table}[htb]
+\caption{Vehicle Corpus: Sentiment by Platform (Automated Labels)}
+\label{tab:sentiment}
+\centering\small
+\begin{tabular}{lrrrr}
+\toprule
+Platform & Pos.\% & Neg.\% & Neu.\% & N \\
+\midrule
+Bilibili & 23.4 & 5.7  & 70.9 & 16,334 \\
+Reddit   & 54.4 & 20.8 & 24.8 &  1,715 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{F2: Smart Connected Products Require an Extended Requirement Vocabulary}
+
+Table~\ref{tab:complaints} reports complaint and requirement-signal categories from the vehicle corpus (exploratory, automated NLP artifact).
+
+Three observations stand out. First, reliability and dealer trust appear more frequently than battery/range and software features, suggesting ownership-phase concerns are more salient in crowd feedback than in specification-centered descriptions. Second, complaint-to-candidate ratios exceed 1.0 for high-salience categories (reliability: 1.48; dealer trust: 1.73; safety: 2.05), reflecting the decomposition of informal complaints into multiple actionable implications. Third, the used-vehicle transaction category (17 candidates from 11 complaints) reveals a stakeholder blind spot: second-hand EV buyers express concerns about battery health certification and service history access that are invisible to OEM pipelines.
+
+\begin{table}[htb]
+\caption{Vehicle Corpus: Complaint Counts and Requirement Signal Candidates (Exploratory, Automated NLP Artifact)}
+\label{tab:complaints}
+\centering\small
+\begin{tabular}{lrr}
+\toprule
+Signal Category & Complaints & Req.\ Cand. \\
+\midrule
+reliability / maintenance  & 469 & 693 \\
+dealer / platform trust    & 372 & 643 \\
+safety / accident          & 211 & 433 \\
+battery / range            &  77 & 119 \\
+comfort / interior         &  48 &  62 \\
+price / value              &  47 &  63 \\
+performance / driving      &  36 &  50 \\
+software / infotainment    &  33 &  59 \\
+used-vehicle transaction   &  11 &  17 \\
+resale / depreciation      &   4 &   4 \\
+general / other            & 395 & 401 \\
+\midrule
+\textbf{Total}             & \textbf{1,703} & \textbf{2,544} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{F3: The Pipeline Produces Traceable Requirement Signals}
+
+Table~\ref{tab:examples} illustrates the evidence-to-requirement-signal translation for three paraphrased cases from the corpus.
+
+\begin{table*}[t]
+\caption{Evidence-to-Requirement-Signal Translation: Three Paraphrased Cases from the Corpus}
+\label{tab:examples}
+\centering\small\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{p{1.6cm} p{1.4cm} p{1.9cm} p{2.8cm} p{2.0cm} p{4.5cm}}
+\toprule
+Platform & Domain & Topic & Complaint Pattern & Req.\ Signal & Candidate Requirement \\
+\midrule
+Reddit / GSMArena
+  & Smartphone
+  & AI ecosystem
+  & AI output dissatisfaction; users request control over enhancement intensity
+  & Controllable AI processing
+  & \textit{The camera app shall allow users to adjust or disable AI scene enhancement per photo.} \\
+\addlinespace
+Bilibili / Reddit
+  & Smart vehicle
+  & software / infotainment
+  & OTA instability; post-update feature regression reported
+  & OTA reliability
+  & \textit{The vehicle software system shall support staged rollout and one-step rollback for OTA updates.} \\
+\addlinespace
+Reddit
+  & Vehicle (used)
+  & used-vehicle transaction
+  & Battery state uncertainty; trust gap in private-market EV sales
+  & Battery health transparency
+  & \textit{The used-vehicle platform shall provide a verifiable, standardised battery health certificate for EV resale.} \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\section{Sanity Check: 50 Manually Inspected Items}
+
+We performed a supplementary inspection of 50 items drawn from the full cross-domain corpus (30 vehicle, 20 smartphone), selected through stratified coverage of platforms, languages, issue types, and noise cases. For each item we verified: (a) whether the noise/complaint flag was broadly appropriate for the paraphrased content; (b) whether the topic assignment was broadly consistent; and (c) that the record was traceable to pipeline artifacts. All text is paraphrased for privacy.
+
+\textbf{Result.} No obvious systematic mismatch was observed: noise flags, complaint flags, and topic assignments appeared broadly appropriate. Five items were correctly flagged as noise; the remaining 45 were flagged as actionable feedback. These checks support plausibility only and do not substitute for inter-rater agreement evaluation.
+
+Tables~\ref{tab:sanity_vehicle} and~\ref{tab:sanity_smartphone} show abridged representative examples. The complete 50-item list is available in the GitHub repository.
+
+\begin{table}[htb]
+\caption{Sanity Check (Abridged): Vehicle Corpus, Items 1--30}
+\label{tab:sanity_vehicle}
+\centering\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{clp{3.6cm}lc}
+\toprule
+\# & Plat. & Paraphrased content & Issue & Noise \\
+\midrule
+1  & Reddit  & Warranty status query on used BYD Seal purchase            & trust    & No \\
+4  & Reddit  & Private-sale BYD Dolphin: warranty non-transferable         & trust    & No \\
+7  & Reddit  & BYD Qin PHEV: 4--5 L/100 km fuel savings reported          & battery  & No \\
+9  & Reddit  & Xpeng G6 battery degradation in Nordic fast-charging        & battery  & No \\
+11 & Reddit  & Xpeng G6 sensor misalignment triggers ADAS false alerts     & safety   & No \\
+12 & Reddit  & Private EV buyer cannot verify battery health pre-purchase  & used     & No \\
+16 & Bilibili& NIO ES6 winter range approx.\ 56\% of rated spec           & battery  & No \\
+19 & Bilibili& Xpeng G9 rear seat inadequate for large-SUV segment        & comfort  & No \\
+22 & Bilibili& Xiaomi SU7 rear seat cramped for 184 cm user               & comfort  & No \\
+26 & Bilibili& Emoji-chain reply to promo video, no product text          & general  & Yes \\
+29 & Bilibili& BYD Qin Plus warranty mileage cap considered too low       & trust    & No \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htb]
+\caption{Sanity Check (Abridged): Smartphone Corpus, Items 31--50}
+\label{tab:sanity_smartphone}
+\centering\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{clp{3.6cm}lc}
+\toprule
+\# & Plat. & Paraphrased content & Issue & Noise \\
+\midrule
+31 & Reddit  & iOS animations feel sluggish vs.\ Android zero-animation   & software & No \\
+33 & Reddit  & User requests option to disable AI scene enhancement        & AI       & No \\
+36 & Reddit  & Per-photo AI enhancement intensity slider requested         & AI       & No \\
+37 & Reddit  & Overheating during extended gaming (thermal throttle)       & perf.    & No \\
+40 & Reddit  & iPhone 16 Pro battery drain after OS update reported        & battery  & No \\
+41 & Bilibili& iPhone 16 Pro AI features below expectation                & AI       & No \\
+45 & Bilibili& Samsung A56 price-performance ratio discussion             & price    & No \\
+47 & Bilibili& NIO ES6 vs.\ Tesla Model Y range for daily commute         & battery  & No \\
+49 & Bilibili& Emoji-only reply flagged as non-actionable noise           & general  & Yes \\
+50 & Bilibili& Short affirmative phrase, no actionable content            & general  & Yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Lessons Learned}
+
+\textbf{L1 -- What we got wrong initially: treating platform as a source label.} Our first pipeline iteration merged all platforms before analysis, producing topic distributions dominated by Reddit's volume (71.6\% of the smartphone corpus). This suppressed Bilibili's price-value signal and GSMArena's update-cadence vocabulary. Re-stratifying by platform before aggregating revealed these differences as structural, not incidental.
+
+\textbf{L2 -- Platform noise is as informative as platform signal.} Bilibili's 12.7\% noise rate in vehicle comments is not merely a cleaning problem---it is a finding. A practitioner who naively pooled Bilibili comments as equivalent to Reddit posts would corrupt the signal. Platform-appropriate filtering is a prerequisite, not an afterthought.
+
+\textbf{L3 -- Extend the requirement vocabulary beyond bug/feature/praise.} The app-review taxonomy does not accommodate lifecycle reliability, service ecosystem trust, or transaction integrity. Forcing vehicle owner feedback into bug/feature/praise categories loses the majority of requirement-relevant content.
+
+\textbf{L4 -- The post-purchase and used-product context is an underexplored CrowdRE frontier.} Second-hand transaction communities contain requirement signals invisible to OEM pipelines. This is a vocabulary and framing problem, not a data volume issue.
+
+\textbf{L5 -- LLMs should be traceable analyst interfaces, not autonomous extractors.} Requiring every LLM output to cite platform, topic, and sample text produced auditable, arguable results.
+
+\textbf{Data ethics.} All data was collected from publicly available platforms. No usernames, profile information, or personally identifying content was retained. All examples in this paper use paraphrased corpus text. No individual profiling was performed.
+
+\section{Toward CrowdRE 2030: Three Open Research Questions}
+
+\textbf{RQ1 -- Platform-calibrated sentiment normalization.} Our vehicle corpus shows Bilibili at 5.7\% negative and Reddit at 20.8\%. A naive analyst might conclude Bilibili users are more satisfied, but this difference partly reflects platform-specific expression norms: Reddit encourages problem-seeking, whereas Bilibili includes more social chatter. One approach is to compute platform-internal baselines or use reference corpora to estimate platform-specific sentiment distributions. However, over-normalization risks discarding platform variation that is itself a requirement signal. A principled method should adjust for measurement artifacts while preserving meaningful inter-platform differences.
+
+\textbf{RQ2 -- Lifecycle-aware requirement vocabulary construction.} As smart connected products mature, the relevant crowd shifts from early adopters to long-term owners to second-hand buyers. Current CrowdRE taxonomies have limited support for post-purchase concerns such as battery degradation, dealer service trust, warranty transfer, and resale transparency. A further question is who in the RE process should own these categories: product managers, service designers, platform providers, or after-sales teams.
+
+\textbf{RQ3 -- Principled multi-domain crowd composition.} Table~\ref{tab:crossdomain} shows that the only shared top-5 topic between smartphones and smart vehicles is price/value, suggesting economic concern is a universal crowd signal while all other categories are domain-specific. Can a unified CrowdRE ontology accommodate a shared economic layer with domain-specific vocabularies above it, without sacrificing precision?
+
+\begin{table}[htb]
+\caption{Cross-Domain: Top Requirement Signal Topics (Exploratory)}
+\label{tab:crossdomain}
+\centering\small
+\begin{tabular}{cll}
+\toprule
+Rank & Smartphones & Smart Vehicles \\
+\midrule
+1 & software update / OS      & reliability / maintenance \\
+2 & AI ecosystem              & dealer / platform trust \\
+3 & camera / imaging          & safety / accident \\
+4 & performance / gaming      & battery / range \\
+5 & \textbf{price / value}    & \textbf{price / value} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Limitations and Threat Mitigation}
+\label{sec:limits}
+
+\textbf{Platform coverage skew (high).} Reddit comprises 71.6\% of the smartphone corpus. \textit{Mitigation:} all analysis is stratified by platform; SMZDM is excluded from formal comparisons.
+
+\textbf{Content quality variability (medium--high).} Bilibili shows an estimated 12.7\% noise rate under conservative filtering; the true rate may be higher. \textit{Mitigation:} noise items are flagged and excluded from topic analysis.
+
+\textbf{Sentiment and topic label reliability (medium).} Labels were produced by automated NLP with no ground-truth annotation corpus. \textit{Mitigation:} we report platform-level distributions and apply conservative thresholds.
+
+\textbf{Requirement candidate coding (medium).} Complaint counts in Table~\ref{tab:complaints} are derived from an automated NLP artifact, not a manually validated ground truth. \textit{Mitigation:} Table~\ref{tab:examples} provides three fully traced examples; Tables~\ref{tab:sanity_vehicle} and~\ref{tab:sanity_smartphone} provide 50 inspected items enabling partial replication.
+
+\textbf{No inter-rater agreement.} Manual checks were performed by the author alone. \textit{Mitigation:} we explicitly frame these as plausibility assessment for an experience report, not a formal empirical evaluation.
+
+\textbf{Chinese sentiment labeling (medium).} The Chinese lexicon is domain-informed but lightweight and not formally evaluated; colloquial vehicle expressions may be under-classified. \textit{Mitigation:} only platform-level distributions are reported.
+
+\textbf{Temporal snapshot.} Data reflects a bounded collection period and may shift with product release cycles.
+
+\textbf{Underrepresented groups.} Reddit and Bilibili structurally over-represent internet-connected, technically engaged users. Non-urban, elderly, and low-digital-literacy users---whose requirements most often go unheard---are absent from this corpus, a limitation relevant to CrowdRE's equity commitments~\cite{Groen2017}.
+
+\section{Conclusion}
+
+This experience report applied a platform-aware CrowdRE pipeline to smartphones and smart vehicles and found three things: platform identity is a structural determinant of which requirement signals are visible; smart connected products require vocabulary extensions beyond app-review taxonomies; and the used-product community is a systematically underexplored requirement source that surfaces concerns invisible to OEM pipelines.
+
+As CrowdRE marks its tenth anniversary, the field faces a productive challenge: the paradigm succeeded by focusing on software feedback through structured channels, but the products most important to users increasingly escape those boundaries. The main lesson is that platform provenance, content quality, and lifecycle position determine what kind of requirements can be observed from the crowd.
+
+\section*{Acknowledgment}
+The author thanks the open user communities on Reddit, Bilibili, GSMArena, and SMZDM whose publicly available feedback forms the empirical basis of this report.
+
+\begin{thebibliography}{14}
+
+\bibitem{Groen2017}
+E.~C. Groen, N.~Seyff, R.~Ali, F.~Dalpiaz, J.~Doerr, E.~Guzman,
+M.~Hosseini, J.~Marco, M.~Oriol, A.~Perini, and M.~Stade,
+``The crowd in requirements engineering: The landscape and challenges,''
+\textit{IEEE Software}, vol.~34, no.~2, pp.~44--52, Mar./Apr. 2017.
+
+\bibitem{Pagano2013}
+D.~Pagano and W.~Maalej,
+``User feedback in the appstore: An empirical study,''
+in \textit{Proc. 21st IEEE Int. Requirements Engineering Conf. (RE'13)},
+Rio de Janeiro, Brazil, 2013, pp.~125--134.
+
+\bibitem{Maalej2015}
+W.~Maalej and H.~Nabil,
+``Bug report, feature request, or simply praise? On automatically classifying app reviews,''
+in \textit{Proc. 23rd IEEE Int. Requirements Engineering Conf. (RE'15)},
+Ottawa, Canada, 2015, pp.~116--125.
+
+\bibitem{Guzman2014}
+E.~Guzman and W.~Maalej,
+``How do users like this feature? A fine-grained sentiment analysis of app reviews,''
+in \textit{Proc. 22nd IEEE Int. Requirements Engineering Conf. (RE'14)},
+Karlskrona, Sweden, 2014, pp.~153--162.
+
+\bibitem{Dalpiaz2021}
+F.~Dalpiaz, N.~Seyff, E.~C. Groen, S.~Adam, J.~Doerr, and A.~Martini,
+``User feedback as a requirements artifact: Understanding the current practice,''
+in \textit{Proc. 29th IEEE Int. Requirements Engineering Conf. (RE'21)},
+Notre Dame, IN, 2021, pp.~235--246.
+
+\bibitem{Groen2015}
+E.~C. Groen, J.~Doerr, and S.~Adam,
+``Towards crowd-based requirements engineering: A research preview,''
+in \textit{Proc. Requirements Engineering: Foundation for Software Quality (REFSQ)},
+Essen, Germany, 2015, pp.~251--257.
+
+\bibitem{Wouters2022}
+J.~Wouters, A.~Menkveld, S.~Brinkkemper, and F.~Dalpiaz,
+``Crowd-based requirements elicitation via pull feedback: Method and case studies,''
+\textit{Requirements Engineering}, vol.~27, no.~4, pp.~429--455, Dec. 2022.
+
+\bibitem{Iacob2013}
+C.~Iacob and R.~Harrison,
+``Retrieving and analyzing mobile apps feature requests from online reviews,''
+in \textit{Proc. 10th IEEE Working Conf. on Mining Software Repositories (MSR'13)},
+San Francisco, CA, 2013, pp.~41--44.
+
+\bibitem{Groen2024}
+E.~C. Groen, K.~R. Rahman, N.~Narsinghani, and J.~Doerr,
+``Towards crowd-based requirements engineering for digital farming (CrowdRE4DF),''
+\textit{arXiv preprint arXiv:2406.19171}, 2024.
+
+\bibitem{Karras2021}
+O.~Karras, E.~Kristo, and J.~Kl\"{u}nder,
+``The potential of using vision videos for CrowdRE: Video comments as a source of feedback,''
+in \textit{Proc. 2021 IEEE 29th Int. Requirements Engineering Conf. Workshops (REW)},
+Notre Dame, IN, 2021, pp.~298--305.
+
+\bibitem{Pilone2024}
+A.~Pilone, P.~Meirelles, F.~Kon, and W.~Maalej,
+``Multilingual crowd-based requirements engineering using large language models,''
+\textit{arXiv preprint arXiv:2408.06505}, 2024.
+
+\bibitem{Hosseini2014}
+M.~Hosseini, K.~Phalp, J.~Taylor, and R.~Ali,
+``Towards crowdsourcing for requirements engineering,''
+in \textit{Proc. REFSQ Workshops},
+CEUR Workshop Proceedings, vol.~1138, 2014, pp.~82--87.
+
+\bibitem{Arora2023}
+C.~Arora, J.~Grundy, and M.~Abdelrazek,
+``Advancing requirements engineering through generative AI: Assessing the role of LLMs,''
+\textit{arXiv preprint arXiv:2310.13976}, 2023.
+
+\bibitem{Hutto2014}
+C.~J. Hutto and E.~Gilbert,
+``VADER: A parsimonious rule-based model for sentiment analysis of social media text,''
+in \textit{Proc. 8th Int. AAAI Conf. on Weblogs and Social Media (ICWSM)},
+Ann Arbor, MI, 2014, pp.~216--225.
+
+\end{thebibliography}
+
+\end{document}

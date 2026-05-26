@@ -1,0 +1,9 @@
+﻿source_file,rows_raw,valid_text_rows,columns
+bilibili_v1,194,194,platform;data_type;phone_model_id;url;search_kw;raw_text;cleaned_text;created_at;video_title;up_name;pub_time;play_count;like_count;comment_count
+bilibili_v2,780,780,platform;source_id;url;phone_model_id;data_type;raw_text;cleaned_text;search_kw;up_name;play_str;play_count;pubtime_str;created_at
+gsmarena_notebookcheck,460,460,platform;data_type;phone_model_id;search_kw;device_name;url;author;time_str;raw_text;cleaned_text;created_at
+smzdm,7,7,platform;source_id;url;phone_model_id;data_type;raw_text;cleaned_text;search_kw;created_at;like_count;fav_count;comment_count
+smzdm_080525,3,3,platform;source_id;url;phone_model_id;data_type;raw_text;cleaned_text;search_kw;created_at;like_count;fav_count;comment_count
+smzdm_231017,16,16,platform;source_id;url;phone_model_id;data_type;raw_text;cleaned_text;search_kw;created_at;like_count;fav_count;comment_count
+reddit_posts,1336,1336,platform;source_id;source_type;url;brand_id;phone_model_id;lang;published_at;raw_text;cleaned_text
+reddit_comments,2396,2396,platform;source_id;source_type;parent_source_id;url;brand_id;phone_model_id;lang;published_at;raw_text;cleaned_text

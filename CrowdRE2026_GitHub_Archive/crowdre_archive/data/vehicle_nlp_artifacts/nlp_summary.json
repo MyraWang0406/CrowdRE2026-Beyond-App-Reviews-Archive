@@ -1,0 +1,120 @@
+{
+  "content_posts": {
+    "rows": 1185,
+    "sentiment": {
+      "neutral": 1131,
+      "positive": 44,
+      "negative": 10
+    },
+    "platform": {
+      "bilibili": 951,
+      "reddit": 234
+    }
+  },
+  "content_comments": {
+    "rows": 18049,
+    "sentiment": {
+      "neutral": 13954,
+      "positive": 2949,
+      "negative": 1146
+    },
+    "platform": {
+      "bilibili": 16334,
+      "reddit": 1715
+    }
+  },
+  "complaints": {
+    "rows": 1703,
+    "issue_type_top": {
+      "reliability_maintenance": 469,
+      "general_feedback": 395,
+      "dealer_platform_trust": 372,
+      "safety_accident": 211,
+      "battery_range": 77,
+      "comfort_interior": 48,
+      "price_value": 47,
+      "performance_driving": 36,
+      "software_infotainment": 33,
+      "usedcar_transaction": 11,
+      "resale_depreciation": 4
+    },
+    "brand_model_top": [
+      {
+        "brand": "byd",
+        "model": "qin_plus",
+        "count": 119
+      },
+      {
+        "brand": "tesla",
+        "model": "modelx",
+        "count": 115
+      },
+      {
+        "brand": "xpeng",
+        "model": "g6",
+        "count": 112
+      },
+      {
+        "brand": "tesla",
+        "model": "models",
+        "count": 103
+      },
+      {
+        "brand": "nio",
+        "model": "es6",
+        "count": 79
+      },
+      {
+        "brand": "tesla",
+        "model": "modely",
+        "count": 76
+      },
+      {
+        "brand": "xpeng",
+        "model": "p7",
+        "count": 76
+      },
+      {
+        "brand": "xiaomi",
+        "model": "su7",
+        "count": 75
+      },
+      {
+        "brand": "tesla",
+        "model": "model3",
+        "count": 63
+      },
+      {
+        "brand": "li",
+        "model": "l9",
+        "count": 59
+      },
+      {
+        "brand": "li",
+        "model": "l6",
+        "count": 57
+      },
+      {
+        "brand": "nio",
+        "model": "es8",
+        "count": 57
+      }
+    ]
+  },
+  "requirement_candidates": {
+    "rows": 2544,
+    "requirement_type_top": {
+      "reliability_maintenance": 693,
+      "dealer_platform_trust": 643,
+      "safety_accident": 433,
+      "general_feedback": 401,
+      "battery_range": 119,
+      "price_value": 63,
+      "comfort_interior": 62,
+      "software_infotainment": 59,
+      "performance_driving": 50,
+      "usedcar_transaction": 17,
+      "resale_depreciation": 4
+    }
+  }
+}

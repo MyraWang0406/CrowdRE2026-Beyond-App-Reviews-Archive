@@ -1,0 +1,11 @@
+﻿platform,sentiment,n
+bilibili,negative,74
+bilibili,neutral,764
+bilibili,positive,103
+gsmarena_notebookcheck,negative,74
+gsmarena_notebookcheck,neutral,305
+gsmarena_notebookcheck,positive,81
+reddit,negative,319
+reddit,neutral,2902
+reddit,positive,348
+smzdm,neutral,14
